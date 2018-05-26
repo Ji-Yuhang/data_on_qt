@@ -64,6 +64,7 @@ Widget::Widget(QWidget *parent) :
 //    connect(qApp, SIGNAL(lastWindowClosed()),
 //            this, SLOT(dump)
     connect(&timer_, SIGNAL(timeout()), this, SLOT(onTimeout()));
+    connect(&refresh_data_timer_, SIGNAL(timeout()), this, SLOT(onRefreshDataTimeout()));
 
 }
 
@@ -108,6 +109,7 @@ void Widget::load_local_news()
     }
 
     timer_.start(3000);
+    refresh_data_timer_.start(10000);
 }
 
 void Widget::async_load_image(const QUrl &url)
@@ -219,6 +221,7 @@ void Widget::newsReplyFinished(QNetworkReply * reply)
         QtJson::JsonObject r_one = it->toMap();
         qDebug() <<r_one;
         News one;
+        one.id = r_one["id"].toString();
         one.image_url = r_one["image_url"].toString();
 //        QtJson::JsonObject allPics = r_one["allPics"].toMap();
 //        QtJson::JsonArray pics = allPics["pics"].toList();
@@ -267,7 +270,12 @@ void Widget::onTimeout()
         this->onIndexActivated(next_index);
     }
 
-//    news_model_->
+    //    news_model_->
+}
+
+void Widget::onRefreshDataTimeout()
+{
+    async_get_server_news();
 }
 
 void Widget::save_url_map()

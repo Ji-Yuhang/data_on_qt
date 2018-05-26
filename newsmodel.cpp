@@ -8,7 +8,19 @@ NewsModel::NewsModel(QObject *parent)
 
 void NewsModel::addNews(const News &one_new)
 {
-    list_.append(one_new);
+    QList<News>::iterator it = list_.begin();
+    QList<News>::iterator end = list_.end();
+
+    QStringList ids;
+    for(; it != end; it++){
+        ids.append(it->id);
+    }
+    if (ids.contains(one_new.id)) {
+        // 新闻已经存在，不加载
+        return;
+    } else {
+        list_.append(one_new);
+    }
     qDebug()<< "Model addNews"<< list_;
     emit layoutChanged();
 }

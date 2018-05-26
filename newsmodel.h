@@ -9,6 +9,7 @@
 #include <QUrl>
 #include <QImage>
 struct News {
+    QString id;
     QString image_url;
     QString title;
     QString content;

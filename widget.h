@@ -33,6 +33,7 @@ public slots:
 
     void onIndexActivated(const QModelIndex &index);
     void onTimeout();
+    void onRefreshDataTimeout();
 
 
 private:
@@ -49,6 +50,7 @@ private:
     QNetworkAccessManager* news_manager_;
 
     QTimer timer_;
+    QTimer refresh_data_timer_;
 
 //    QNetWork
 };
