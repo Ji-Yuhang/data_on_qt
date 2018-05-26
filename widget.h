@@ -2,6 +2,7 @@
 #define WIDGET_H
 
 #include <QListView>
+#include <QTimer>
 #include <QUrl>
 #include <QWidget>
 class NewsModel;
@@ -27,6 +28,8 @@ public:
 public slots:
     void replyFinished(QNetworkReply*);
     void newsReplyFinished(QNetworkReply*);
+    void onIndexActivated(const QModelIndex &index);
+    void onTimeout();
 
 
 private:
@@ -40,6 +43,7 @@ private:
     QMap<QUrl, QString> url_map_;
     QNetworkAccessManager* manager_;
     QNetworkAccessManager* news_manager_;
+    QTimer timer_;
 
 //    QNetWork
 };

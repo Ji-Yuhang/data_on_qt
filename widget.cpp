@@ -35,6 +35,9 @@ Widget::Widget(QWidget *parent) :
     this->load_local_news();
 
     list_view_->setModel(news_model_);
+    connect(list_view_, SIGNAL(activated(QModelIndex)), this, SLOT(onIndexActivated(QModelIndex)));
+    connect(list_view_, SIGNAL(clicked(QModelIndex)), this, SLOT(onIndexActivated(QModelIndex)));
+
     QModelIndex index = news_model_->index(0);
     QImage* image = new QImage("http://n.sinaimg.cn/news/transform/250/w160h90/20180510/h-h2-haichqz4982576.jpg");
     QWidget* w = new QWidget;
@@ -57,6 +60,7 @@ Widget::Widget(QWidget *parent) :
 
 //    connect(qApp, SIGNAL(lastWindowClosed()),
 //            this, SLOT(dump)
+    connect(&timer_, SIGNAL(timeout()), this, SLOT(onTimeout()));
 
 }
 
@@ -95,7 +99,7 @@ void Widget::load_local_news()
 
         news_model_->addNews(one);
     }
-
+    timer_.start(3000);
 }
 
 void Widget::async_load_image(const QUrl &url)
@@ -181,6 +185,35 @@ void Widget::newsReplyFinished(QNetworkReply * reply)
 
 
 
+}
+
+void Widget::onIndexActivated(const QModelIndex &index)
+{
+//    qDebug()<< "onIndexActivated "<< index;
+//    news_model_->data(index);
+    News n = qvariant_cast<News>(index.model()->data(index));
+    ui->title->setText(n.title);
+    ui->detail->setText(n.content);
+    ui->created_at->setText(n.created_at.toString("yyyy-MM-dd hh:mm:ss"));
+    ui->source->setText(n.source);
+}
+
+void Widget::onTimeout()
+{
+    // 定时更新新闻数据
+    QModelIndex index = list_view_->currentIndex();
+    QModelIndex next_index = index.model()->sibling(index.row() + 1,0, index);
+    if (!next_index.isValid()) {
+//        next_index = list_view_->rootIndex();
+        next_index = index.model()->sibling(0,0, index);
+    }
+    if (next_index.isValid()) {
+        list_view_->scrollTo(next_index);
+        list_view_->setCurrentIndex(next_index);
+        this->onIndexActivated(next_index);
+    }
+
+//    news_model_->
 }
 
 void Widget::save_url_map()
