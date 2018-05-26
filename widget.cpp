@@ -20,6 +20,7 @@ Widget::Widget(QWidget *parent) :
     ,news_model_(new NewsModel)
     ,news_delegate_(new NewsDelegate)
     ,manager_(new QNetworkAccessManager(this))
+    ,sina_news_manager_(new QNetworkAccessManager(this))
     ,news_manager_(new QNetworkAccessManager(this))
 
 {
@@ -55,6 +56,8 @@ Widget::Widget(QWidget *parent) :
     list_view_->setItemDelegate(news_delegate_);
     connect(manager_, SIGNAL(finished(QNetworkReply*)),
             this, SLOT(replyFinished(QNetworkReply*)));
+    connect(sina_news_manager_, SIGNAL(finished(QNetworkReply*)),
+            this, SLOT(sinaNewsReplyFinished(QNetworkReply*)));
     connect(news_manager_, SIGNAL(finished(QNetworkReply*)),
             this, SLOT(newsReplyFinished(QNetworkReply*)));
 
@@ -87,18 +90,23 @@ void Widget::load_local_news()
         url_map_.insert(QUrl(url), value);
     }
 
-    async_get_sina_news();
-    for(int i = 0; i < 5; ++i) {
-        News one;
-        one.image_url = "http://n.sinaimg.cn/news/1_img/vcg/d2808720/186/w1024h762/20180510/sgYh-haichqz3581131.jpg";
-        one.title = "俄总统普京举父亲照片参加“不朽军团”游行";
-        one.content = "当地时间2018年5月9日，俄罗斯莫斯科，俄罗斯总统普京和以色列总理内塔尼亚胡参加“不朽军团”游行，纪念战胜纳粹德国73周年。图为普京拿着父亲照片，参加游行。";
-        one.source = "新浪图片";
-        one.created_at = QDateTime::currentDateTime();
-        async_load_image(QUrl(one.image_url));
+//    async_get_sina_news();
+    async_get_server_news();
+    // 模拟数据
+    if (false) {
+        for(int i = 0; i < 5; ++i) {
+            News one;
+            one.image_url = "http://n.sinaimg.cn/news/1_img/vcg/d2808720/186/w1024h762/20180510/sgYh-haichqz3581131.jpg";
+            one.title = "俄总统普京举父亲照片参加“不朽军团”游行";
+            one.content = "当地时间2018年5月9日，俄罗斯莫斯科，俄罗斯总统普京和以色列总理内塔尼亚胡参加“不朽军团”游行，纪念战胜纳粹德国73周年。图为普京拿着父亲照片，参加游行。";
+            one.source = "新浪图片";
+            one.created_at = QDateTime::currentDateTime().toString("yyyy-MM-dd hh:mm:ss");
+            async_load_image(QUrl(one.image_url));
 
-        news_model_->addNews(one);
+            news_model_->addNews(one);
+        }
     }
+
     timer_.start(3000);
 }
 
@@ -120,8 +128,13 @@ void Widget::async_load_image(const QUrl &url)
 void Widget::async_get_sina_news()
 {
     QUrl url("http://interface.sina.cn/wap_api/layout_col.d.json?&showcid=56261");
+    sina_news_manager_->get(QNetworkRequest(url));
+}
+void Widget::async_get_server_news()
+{
+    QUrl url("http://news.memorysheep.com/api/v1/news");
+//    QUrl url("http://localhost:3000/api/v1/news");
     news_manager_->get(QNetworkRequest(url));
-
 }
 
 void Widget::replyFinished(QNetworkReply *reply)
@@ -156,7 +169,7 @@ void Widget::replyFinished(QNetworkReply *reply)
 
 }
 
-void Widget::newsReplyFinished(QNetworkReply * reply)
+void Widget::sinaNewsReplyFinished(QNetworkReply * reply)
 {
     QByteArray block = reply->readAll();
     QtJson::JsonObject obj = QtJson::parse(QString::fromUtf8(block)).toMap();
@@ -177,7 +190,47 @@ void Widget::newsReplyFinished(QNetworkReply * reply)
         one.title = r_one["title"].toString();
         one.content = r_one["stitle"].toString();
         one.source = r_one["_id"].toString();
-        one.created_at = QDateTime::currentDateTime();
+        one.created_at = QDateTime::currentDateTime().toString("yyyy-MM-dd hh:mm:ss");
+        async_load_image(QUrl(one.image_url));
+
+        news_model_->addNews(one);
+    }
+
+
+
+}
+
+void Widget::newsReplyFinished(QNetworkReply * reply)
+{
+    QByteArray block = reply->readAll();
+    QtJson::JsonObject obj = QtJson::parse(QString::fromUtf8(block)).toMap();
+//    QtJson::JsonObject result = obj["result"].toMap();
+//    QtJson::JsonObject data = obj["data"].toMap();
+    QString quick_new = obj["quick_new"].toString();
+    QString import_note = obj["import_note"].toString();
+    QString note_information = obj["note_information"].toString();
+
+    ui->quick_new->setText(quick_new);
+    ui->import_note->setText(import_note);
+    ui->note_information->setText(note_information);
+
+    QtJson::JsonArray list = obj["news"].toList();
+    for (QtJson::JsonArray::iterator it = list.begin(); it != list.end(); ++it) {
+        QtJson::JsonObject r_one = it->toMap();
+        qDebug() <<r_one;
+        News one;
+        one.image_url = r_one["image_url"].toString();
+//        QtJson::JsonObject allPics = r_one["allPics"].toMap();
+//        QtJson::JsonArray pics = allPics["pics"].toList();
+//        if (!pics.isEmpty()){
+//            one.image_url = pics[0].toMap()["imgurl"].toString();
+//        }
+
+//        one.image_url = "http://n.sinaimg.cn/news/1_img/vcg/d2808720/186/w1024h762/20180510/sgYh-haichqz3581131.jpg";
+        one.title = r_one["title"].toString();
+        one.content = r_one["content"].toString();
+        one.source = r_one["source"].toString();
+        one.created_at = r_one["created_at"].toString();
         async_load_image(QUrl(one.image_url));
 
         news_model_->addNews(one);
@@ -194,7 +247,7 @@ void Widget::onIndexActivated(const QModelIndex &index)
     News n = qvariant_cast<News>(index.model()->data(index));
     ui->title->setText(n.title);
     ui->detail->setText(n.content);
-    ui->created_at->setText(n.created_at.toString("yyyy-MM-dd hh:mm:ss"));
+    ui->created_at->setText(n.created_at); // .toString("yyyy-MM-dd hh:mm:ss")
     ui->source->setText(n.source);
 }
 
@@ -202,6 +255,7 @@ void Widget::onTimeout()
 {
     // 定时更新新闻数据
     QModelIndex index = list_view_->currentIndex();
+    if (!index.isValid()) return;
     QModelIndex next_index = index.model()->sibling(index.row() + 1,0, index);
     if (!next_index.isValid()) {
 //        next_index = list_view_->rootIndex();

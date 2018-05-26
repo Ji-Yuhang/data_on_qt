@@ -12,7 +12,8 @@ struct News {
     QString image_url;
     QString title;
     QString content;
-    QDateTime created_at;
+//    QDateTime created_at;
+    QString created_at;
     QString source;
     QImage image;
 };

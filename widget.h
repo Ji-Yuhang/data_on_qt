@@ -24,10 +24,13 @@ public:
     void load_local_news();
     void async_load_image(const QUrl& url);
     void async_get_sina_news();
+    void async_get_server_news();
 
 public slots:
     void replyFinished(QNetworkReply*);
+    void sinaNewsReplyFinished(QNetworkReply*);
     void newsReplyFinished(QNetworkReply*);
+
     void onIndexActivated(const QModelIndex &index);
     void onTimeout();
 
@@ -42,7 +45,9 @@ private:
 
     QMap<QUrl, QString> url_map_;
     QNetworkAccessManager* manager_;
+    QNetworkAccessManager* sina_news_manager_;
     QNetworkAccessManager* news_manager_;
+
     QTimer timer_;
 
 //    QNetWork
